@@ -21,7 +21,7 @@ const unsigned long period = 500;  //the value is a number of mill
 ESP8266WebServer server(80);
 WebSocketsServer webSocket=WebSocketsServer(88);
 String webSite,JSONtxt;
-boolean LEDonoff=true;
+
 
 const char webSiteCont[] PROGMEM = 
 R"=====(
@@ -36,26 +36,24 @@ R"=====(
 
 #dynRectangle{
   width:0px;
-  height:11px;
-  position: fixed;
+  height:12px;
   top: 9px;
   background-color: red;
   z-index: -1;
-  margin-top:200px;
+  margin-top:8px;
 }
 
 #rectangle{
 
-  width:1001px;
+  width: 1401px;
   
 
   background-image: 
     linear-gradient(90deg, 
-      rgba(73, 73, 73, 0.5) 0, 
-      rgba(73, 73, 73, 0.5) 2%, 
-      transparent 2%
-    ), 
-    linear-gradient(180deg, 
+      rgba(73, 73, 73, 0.5) 0%, 
+      rgba(73, 73, 73, 0.5) 1%, 
+      transparent 1%
+    ),linear-gradient(180deg, 
       #ffffff 50%, 
       transparent 50%
     ), 
@@ -110,9 +108,10 @@ R"=====(
       rgba(73, 73, 73, 0.4) 92%, 
       transparent 92%
     );
-  background-size: 50px 20px;
-  background-repeat: repeat-x;
-  min-height: 20px;
+  
+  
+  background-size: 140px 40px;
+  min-height: 40px;
   
   /* only needed for labels */
   white-space:nowrap;
@@ -121,11 +120,12 @@ R"=====(
   margin-top:200px;
   padding:0;
 }
+
 label {
-  font-size:9px;
+  font-size:16px;
   padding-top:2px;
   display:inline-block;
-  width:100px;
+  width:140px;
   text-indent:3px;
 }
 
@@ -165,8 +165,8 @@ label {
     websock.onmessage=function(evt)
     {
        JSONobj = JSON.parse(evt.data);
-       var a = parseInt(JSONobj.LEDonoff);
-       document.getElementById("dynRectangle").style.width = a+"px";
+       var dist = parseInt(JSONobj.Distance);
+       document.getElementById("dynRectangle").style.width = dist+"px";
     } // end of onmessage
       
   } // end of InıtWebSocket
@@ -186,31 +186,6 @@ void WebSite(){
   
 }
 
-void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t welength)
-{
-  String payloadString = (const char *)payload;
-  Serial.print("payloadString= ");
-  Serial.println(payloadString);
-
-  if(type == WStype_TEXT) // receive text from cliet
-  {
-    byte separator=payloadString.indexOf('=');
-    String var = payloadString.substring(0,separator);
-    Serial.print("var= ");
-    Serial.println(var);
-    String val = payloadString.substring(separator+1);
-    Serial.print("val =");
-    Serial.println(val);
-    Serial.println(" ");
-
-    if(var == "LEDonoff")
-    {
-      LEDonoff = false;
-      if(val=="ON")LEDonoff = true;
-    }   
-  } 
-}
-
 void setup() {
   Serial.begin(9600);
 
@@ -226,7 +201,6 @@ void setup() {
   server.on("/",WebSite);
   server.begin();
   webSocket.begin();
-  webSocket.onEvent(webSocketEvent);
 
   pinMode(trigP, OUTPUT);  // Sets the trigPin as an Output
   pinMode(echoP, INPUT);   // Sets the echoPin as an Input
@@ -261,13 +235,24 @@ void loop()
   }
 
   
-  dist = distance * 1000 / 185;
+  //dist = distance * 1000 / 22;
+
+  if(dist > (distance * 1400 / 22) )
+      dist = dist - 1;
+  else if(dist < (distance * 1400 / 22) )
+      dist = dist + 1;
+  else
+      dist = (distance * 1400 / 22);
+
+   if(distance > 22)
+      dist = 1400;
+      
   //if(dist == 1000)
   //  dist = 0;
     
   //Serial.println(dist);
-  String LEDswitch = String(dist);
-  JSONtxt = "{\"LEDonoff\":\""+LEDswitch+"\"}";
+  String distaceStr = String(dist);
+  JSONtxt = "{\"Distance\":\""+distaceStr+"\"}";
   webSocket.broadcastTXT(JSONtxt);
 
 }
